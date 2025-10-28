@@ -6,10 +6,10 @@ Scalar (OpenAPI), Hono (Server), SvelteKit, ORPC, Pino (Logging), pnpm stuff
 
 By default:
 
-- backend: localhost:3001/
-  - scalar: http://localhost:3001/
+- backend: https:localhost:3001
+  - scalar: http://localhost:3001
   - openapi spec: http://localhost:3001/spec.json
-- frontend: http://localhost:5173/
+- frontend: http://localhost:5173
 
 ## Get started
 
