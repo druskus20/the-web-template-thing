@@ -13,6 +13,8 @@ By default:
 
 ## Get started
 
+This project assumes you have `just` and `pnpm` installed.
+
 ```bash
 just install
 just setup            # Full project setup
