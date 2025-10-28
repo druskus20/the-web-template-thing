@@ -1,0 +1,57 @@
+# Backend-only Dockerfile
+FROM node:18-alpine AS builder
+
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-workspace.yaml ./
+COPY api/package.json ./api/
+COPY backend/package.json ./backend/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY api/ ./api/
+COPY backend/ ./backend/
+COPY tsconfig.json ./
+
+# Build API and backend
+RUN pnpm -r --filter=@dashboard/api build
+RUN pnpm -r --filter=@dashboard/backend build
+
+# Production stage
+FROM node:18-alpine AS production
+
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copy package files for production dependencies
+COPY package.json pnpm-workspace.yaml ./
+COPY api/package.json ./api/
+COPY backend/package.json ./backend/
+
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built artifacts
+COPY --from=builder /app/api/dist ./api/dist
+COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/api/package.json ./api/
+COPY --from=builder /app/backend/package.json ./backend/
+
+# Copy service management scripts
+COPY start-services.js ./
+
+# Copy backend .env file if it exists
+COPY backend/.env* ./backend/
+
+# Environment variables
+ENV RUN_MODE=backend-only
+
+EXPOSE 3001
+
+CMD ["npm", "run", "start:backend"]

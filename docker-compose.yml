@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Combined frontend + backend (default setup - both processes in one container)
+  app:
+    build: .
+    ports:
+      - "3000:3000"  # Frontend
+      - "3001:3001"  # Backend API
+    environment:
+      - RUN_MODE=combined
+      - FRONTEND_PORT=${FRONTEND_PORT}
+      - FRONTEND_HOST=${FRONTEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - BACKEND_HOST=${BACKEND_HOST}
+    profiles:
+      - combined
+
+  # Backend only (for separate deployment)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    environment:
+      - RUN_MODE=backend-only
+    env_file:
+      - ./backend/.env
+    profiles:
+      - separate
+
+  # Frontend only (nginx serving static files)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+    depends_on:
+      - backend
+    profiles:
+      - separate
+
+# Usage:
+# Combined mode: docker-compose --profile combined up
+# Separate mode: docker-compose --profile separate up
+# Default: docker-compose up (runs combined mode)
