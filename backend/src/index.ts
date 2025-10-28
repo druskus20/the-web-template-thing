@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
-import { OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from "@orpc/zod";
 import { router } from "./router.js";
 import { config, isDevelopment } from "./config.js";
@@ -52,12 +52,22 @@ const openAPIHandler = new OpenAPIHandler(router, {
   plugins: [
     new CORSPlugin(config.cors),
     new ZodSmartCoercionPlugin(),
-  ],
-});
-
-const openAPIGenerator = new OpenAPIGenerator({
-  schemaConverters: [
-    new ZodToJsonSchemaConverter(),
+    new OpenAPIReferencePlugin({
+      docsProvider: 'scalar',
+      schemaConverters: [
+        new ZodToJsonSchemaConverter(),
+      ],
+      specGenerateOptions: {
+        info: {
+          title: "Dashboard API",
+          version: "1.0.0",
+          description: "A comprehensive API for the dashboard application providing endpoints for data management, user operations, and system configuration. This API follows REST principles and provides both RPC and OpenAPI interfaces for maximum compatibility.",
+        },
+        servers: [
+          { url: "/api" },
+        ],
+      },
+    }),
   ],
 });
 
@@ -75,10 +85,10 @@ app.use("/rpc/*", async (c, next) => {
   return await next();
 });
 
-// Handle OpenAPI endpoints
-app.use("/api/*", async (c, next) => {
+// Handle OpenAPI endpoints (includes Scalar docs and spec.json)
+app.use("/*", async (c, next) => {
   const { matched, response } = await openAPIHandler.handle(c.req.raw, {
-    prefix: "/api",
+    prefix: "/",
     context: {},
   });
 
@@ -87,50 +97,6 @@ app.use("/api/*", async (c, next) => {
   }
 
   return await next();
-});
-
-// Serve OpenAPI spec
-app.get("/spec.json", async (c) => {
-  const spec = await openAPIGenerator.generate(router, {
-    info: {
-      title: "Dashboard API",
-      version: "1.0.0",
-      description: "API for the dashboard application",
-    },
-    servers: [
-      { url: "/api" },
-    ],
-  });
-
-  return c.json(spec);
-});
-
-// Serve Scalar UI
-app.get("/", async (c) => {
-  const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <title>Dashboard API Documentation</title>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/svg+xml" href="https://orpc.unnoq.com/icon.svg" />
-      </head>
-      <body>
-        <div id="app"></div>
-
-        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-        <script>
-          Scalar.createApiReference('#app', {
-            url: '/spec.json',
-            theme: 'default',
-          })
-        </script>
-      </body>
-    </html>
-  `;
-
-  return c.html(html);
 });
 
 logger.info(
