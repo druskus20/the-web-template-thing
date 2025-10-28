@@ -10,9 +10,9 @@ export const hello = os.hello.handler(({ input, errors }) => {
     });
   }
 
-  if (input.name !== "pedro") {
+  if (input.name !== "yoo") {
     throw errors.INVALID_NAME({
-      message: `Name '${input.name}' is not allowed. Only 'pedro' is accepted.`,
+      message: `Name '${input.name}' is not allowed. Only 'yoo' is accepted.`,
       data: { providedName: input.name },
     });
   }

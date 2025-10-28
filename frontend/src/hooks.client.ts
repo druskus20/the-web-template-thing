@@ -1,27 +1,15 @@
-import { dev } from "$app/environment";
 import { logger } from "$lib/logger";
+import { config, isDevelopment } from "$lib/config";
 
-// Log environment variables on client startup
-const nodeEnv = dev ? "development" : "production";
-const debug = import.meta.env.VITE_DEBUG || "false";
+// Log configuration on client startup
+logger.info({ NODE_ENV: config.nodeEnv, DEBUG: config.debug }, "Environment configuration");
 
-logger.info({ NODE_ENV: nodeEnv, DEBUG: debug }, "Environment configuration");
+if (isDevelopment) {
+  const configVars = {
+    NODE_ENV: config.nodeEnv,
+    DEBUG: config.debug,
+    VITE_API_URL: config.api.url
+  };
 
-if (dev) {
-  const envVars = Object.keys(import.meta.env)
-    .filter(
-      (key) =>
-        !key.includes("PASSWORD") &&
-        !key.includes("SECRET") &&
-        !key.includes("TOKEN"),
-    )
-    .reduce(
-      (obj, key) => {
-        obj[key] = import.meta.env[key];
-        return obj;
-      },
-      {} as Record<string, string | undefined>,
-    );
-
-  logger.info({ variables: envVars }, "Development environment variables");
+  logger.info({ variables: configVars }, "Development configuration variables");
 }

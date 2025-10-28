@@ -2,35 +2,26 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
+import { OpenAPIGenerator } from "@orpc/openapi";
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from "@orpc/zod";
 import { router } from "./router.js";
-import { config } from "dotenv";
+import { config, isDevelopment } from "./config.js";
 import { logger } from "./logger.js";
 
-config();
+// Log configuration
+logger.info({ NODE_ENV: config.nodeEnv, DEBUG: config.debug }, "Environment configuration");
 
-// Log environment variables
-const nodeEnv = process.env["NODE_ENV"] || "development";
-const debug = process.env["DEBUG"] || "false";
+if (isDevelopment) {
+  const configVars = {
+    NODE_ENV: config.nodeEnv,
+    DEBUG: config.debug,
+    BACKEND_PORT: config.server.port.toString(),
+    BACKEND_HOST: config.server.host,
+    CORS_ORIGIN: config.cors.origin
+  };
 
-logger.info({ NODE_ENV: nodeEnv, DEBUG: debug }, "Environment configuration");
-
-if (nodeEnv === "development") {
-  const envVars = Object.keys(process.env)
-    .filter(
-      (key) =>
-        !key.includes("PASSWORD") &&
-        !key.includes("SECRET") &&
-        !key.includes("TOKEN"),
-    )
-    .reduce(
-      (obj, key) => {
-        obj[key] = process.env[key];
-        return obj;
-      },
-      {} as Record<string, string | undefined>,
-    );
-
-  logger.info({ variables: envVars }, "Development environment variables");
+  logger.info({ variables: configVars }, "Development configuration variables");
 }
 
 const app = new Hono();
@@ -53,11 +44,20 @@ app.use("*", async (c, next) => {
 
 const handler = new RPCHandler(router, {
   plugins: [
-    new CORSPlugin({
-      origin: process.env["CORS_ORIGIN"] || "*",
-      allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"],
-      allowHeaders: ["Content-Type", "Authorization"],
-    }),
+    new CORSPlugin(config.cors),
+  ],
+});
+
+const openAPIHandler = new OpenAPIHandler(router, {
+  plugins: [
+    new CORSPlugin(config.cors),
+    new ZodSmartCoercionPlugin(),
+  ],
+});
+
+const openAPIGenerator = new OpenAPIGenerator({
+  schemaConverters: [
+    new ZodToJsonSchemaConverter(),
   ],
 });
 
@@ -75,16 +75,74 @@ app.use("/rpc/*", async (c, next) => {
   return await next();
 });
 
-const port = parseInt(process.env["BACKEND_PORT"] || "3001", 10);
-const host = process.env["BACKEND_HOST"] || "0.0.0.0";
+// Handle OpenAPI endpoints
+app.use("/api/*", async (c, next) => {
+  const { matched, response } = await openAPIHandler.handle(c.req.raw, {
+    prefix: "/api",
+    context: {},
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  return await next();
+});
+
+// Serve OpenAPI spec
+app.get("/spec.json", async (c) => {
+  const spec = await openAPIGenerator.generate(router, {
+    info: {
+      title: "Dashboard API",
+      version: "1.0.0",
+      description: "API for the dashboard application",
+    },
+    servers: [
+      { url: "/api" },
+    ],
+  });
+
+  return c.json(spec);
+});
+
+// Serve Scalar UI
+app.get("/", async (c) => {
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <title>Dashboard API Documentation</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/svg+xml" href="https://orpc.unnoq.com/icon.svg" />
+      </head>
+      <body>
+        <div id="app"></div>
+
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+        <script>
+          Scalar.createApiReference('#app', {
+            url: '/spec.json',
+            theme: 'default',
+          })
+        </script>
+      </body>
+    </html>
+  `;
+
+  return c.html(html);
+});
 
 logger.info(
-  { host: host === "0.0.0.0" ? "localhost" : host, port },
+  {
+    host: config.server.host === "0.0.0.0" ? "localhost" : config.server.host,
+    port: config.server.port
+  },
   "Backend API server starting",
 );
 
 serve({
   fetch: app.fetch,
-  port,
-  hostname: host,
+  port: config.server.port,
+  hostname: config.server.host,
 });

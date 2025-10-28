@@ -15,7 +15,7 @@ export const helloContract = oc
   )
   .errors({
     INVALID_NAME: {
-      message: 'Only "pedro" is allowed as a name',
+      message: 'Only "yoo" is allowed as a name',
       data: z.object({
         providedName: z.string(),
       }),
@@ -36,7 +36,7 @@ export const byeContract = oc
 
 export const healthContract = oc
   .route({ method: "GET", path: "/health" })
-  .input(z.void())
+  .input(z.any())
   .output(
     z.object({
       status: z.string(),
