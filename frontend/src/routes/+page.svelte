@@ -3,10 +3,11 @@
   import { safe, isDefinedError } from "@orpc/client";
   import { logger } from "$lib/logger";
   import { onMount, onDestroy } from "svelte";
+  import type { FarewellResponseModel } from "@dashboard/api";
 
   let name = "";
   let helloResult = "";
-  let byeResult = "";
+  let byeResult: FarewellResponseModel | null = null;
   let errorMessage = "";
   let isBackendConnected = false;
   let healthCheckInterval: ReturnType<typeof setInterval>;
@@ -96,15 +97,15 @@
         { message: result.message },
         "Bye request completed successfully",
       );
-      byeResult = result.message;
+      byeResult = result;
     } catch (error) {
       if (handleConnectionError(error)) {
-        byeResult = "";
+        byeResult = null;
         return;
       }
       logger.error({ error }, "Bye request failed");
       errorMessage = "Failed to get bye message";
-      byeResult = "";
+      byeResult = null;
     }
   }
 </script>
@@ -112,11 +113,7 @@
 <main>
   <h1>Dashboard</h1>
 
-  <div
-    style="margin-bottom: 20px; padding: 8px 12px; border-radius: 4px; font-size: 14px; {isBackendConnected
-      ? 'background-color: #d4edda; color: #155724;'
-      : 'background-color: #f8d7da; color: #721c24;'}"
-  >
+  <div>
     {isBackendConnected ? "✅ Backend Connected" : "❌ Backend Disconnected"}
   </div>
 
@@ -135,11 +132,28 @@
     <button on:click={handleBye}>Say Bye</button>
 
     {#if byeResult}
-      <p>Result: {byeResult}</p>
+      <div>
+        <p><strong>Message:</strong> {byeResult.message}</p>
+        <p><strong>Timestamp:</strong> {new Date(byeResult.timestamp).toLocaleString()}</p>
+        {#if byeResult.sessionDuration}
+          <p><strong>Session Duration:</strong> {Math.floor(byeResult.sessionDuration / 60)}m {byeResult.sessionDuration % 60}s</p>
+        {/if}
+        {#if byeResult.user}
+          <div>
+            <p><strong>User Info:</strong></p>
+            <p>• ID: {byeResult.user.id}</p>
+            <p>• Name: {byeResult.user.name}</p>
+            <p>• Email: {byeResult.user.email}</p>
+            <p>• Role: {byeResult.user.role}</p>
+            <p>• Created: {new Date(byeResult.user.createdAt).toLocaleString()}</p>
+            <p>• Active: {byeResult.user.isActive ? 'Yes' : 'No'}</p>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 
   {#if errorMessage}
-    <p style="color: red;">Error: {errorMessage}</p>
+    <p>Error: {errorMessage}</p>
   {/if}
 </main>
