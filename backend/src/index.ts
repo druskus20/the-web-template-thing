@@ -6,6 +6,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from "@orpc/zod";
 import { router } from "./router.js";
+import { UserModel, FarewellResponseModel } from "@dashboard/api";
 import { config, isDevelopment } from "./config.js";
 import { logger } from "./logger.js";
 
@@ -66,6 +67,14 @@ const openAPIHandler = new OpenAPIHandler(router, {
         servers: [
           { url: "/api" },
         ],
+        commonSchemas: {
+          User: {
+            schema: UserModel,
+          },
+          FarewellResponse: {
+            schema: FarewellResponseModel,
+          },
+        },
       },
     }),
   ],

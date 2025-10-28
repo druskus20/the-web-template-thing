@@ -23,8 +23,21 @@ export const hello = os.hello.handler(({ input, errors }) => {
 });
 
 export const bye = os.bye.handler(() => {
+  // Simulate authenticated user context (in real app, this would come from auth middleware)
+  const mockUser = {
+    id: "user_123",
+    name: "Demo User",
+    email: "demo@example.com",
+    role: "user" as const,
+    createdAt: "2023-01-15T10:30:00.000Z",
+    isActive: true,
+  };
+
   return {
-    message: "Goodbye!",
+    message: "Goodbye! Thanks for using our API.",
+    user: mockUser,
+    timestamp: new Date().toISOString(),
+    sessionDuration: Math.floor(Math.random() * 3600) + 300, // Random session 5-65 minutes
   };
 });
 

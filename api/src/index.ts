@@ -1,4 +1,4 @@
-export { contract } from "./contract.js";
+export { contract, UserModel, FarewellResponseModel } from "./contract.js";
 export type {
   InferContractRouterInputs,
   InferContractRouterOutputs,
