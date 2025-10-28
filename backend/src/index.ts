@@ -11,7 +11,10 @@ import { config, isDevelopment } from "./config.js";
 import { logger } from "./logger.js";
 
 // Log configuration
-logger.info({ NODE_ENV: config.nodeEnv, DEBUG: config.debug }, "Environment configuration");
+logger.info(
+  { NODE_ENV: config.nodeEnv, DEBUG: config.debug },
+  "Environment configuration",
+);
 
 if (isDevelopment) {
   const configVars = {
@@ -19,7 +22,7 @@ if (isDevelopment) {
     DEBUG: config.debug,
     BACKEND_PORT: config.server.port.toString(),
     BACKEND_HOST: config.server.host,
-    CORS_ORIGIN: config.cors.origin
+    CORS_ORIGIN: config.cors.origin,
   };
 
   logger.info({ variables: configVars }, "Development configuration variables");
@@ -44,9 +47,7 @@ app.use("*", async (c, next) => {
 });
 
 const handler = new RPCHandler(router, {
-  plugins: [
-    new CORSPlugin(config.cors),
-  ],
+  plugins: [new CORSPlugin(config.cors)],
 });
 
 const openAPIHandler = new OpenAPIHandler(router, {
@@ -54,19 +55,16 @@ const openAPIHandler = new OpenAPIHandler(router, {
     new CORSPlugin(config.cors),
     new ZodSmartCoercionPlugin(),
     new OpenAPIReferencePlugin({
-      docsProvider: 'scalar',
-      schemaConverters: [
-        new ZodToJsonSchemaConverter(),
-      ],
+      docsProvider: "scalar",
+      schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
         info: {
           title: "Dashboard API",
           version: "1.0.0",
-          description: "A comprehensive API for the dashboard application providing endpoints for data management, user operations, and system configuration. This API follows REST principles and provides both RPC and OpenAPI interfaces for maximum compatibility.",
+          description:
+            "A comprehensive API for the dashboard application providing endpoints for data management, user operations, and system configuration. This API follows REST principles and provides both RPC and OpenAPI interfaces for maximum compatibility.",
         },
-        servers: [
-          { url: "/api" },
-        ],
+        servers: [{ url: "/api" }],
         commonSchemas: {
           User: {
             schema: UserModel,
@@ -111,7 +109,7 @@ app.use("/*", async (c, next) => {
 logger.info(
   {
     host: config.server.host === "0.0.0.0" ? "localhost" : config.server.host,
-    port: config.server.port
+    port: config.server.port,
   },
   "Backend API server starting",
 );

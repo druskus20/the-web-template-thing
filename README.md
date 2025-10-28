@@ -4,14 +4,12 @@ End to end typesafe template app with json logging and Svelte.
 
 Scalar (OpenAPI), Hono (Server), SvelteKit, ORPC, Pino (Logging), pnpm stuff
 
-By default: 
+By default:
 
 - backend: localhost:3001/
   - scalar: http://localhost:3001/
   - openapi spec: http://localhost:3001/spec.json
 - frontend: http://localhost:5173/
-
-
 
 ## Get started
 

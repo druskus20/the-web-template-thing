@@ -9,10 +9,7 @@ import { config } from "./config";
 const getApiUrl = () => {
   // In browser, check for runtime config first, then build-time config
   if (browser) {
-    return (
-      (window as any).__API_URL__ ||
-      config.api.url
-    );
+    return (window as any).__API_URL__ || config.api.url;
   }
   // Server-side: use config
   return config.api.url;
