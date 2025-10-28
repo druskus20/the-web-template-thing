@@ -9,6 +9,11 @@ export const config = {
     port: parseInt(process.env["BACKEND_PORT"] || "3001", 10),
     host: process.env["BACKEND_HOST"] || "0.0.0.0",
   },
+  ssl: {
+    enabled: process.env["SSL_ENABLED"] === "true",
+    keyPath: process.env["SSL_KEY_PATH"] || "localhost-privkey.pem",
+    certPath: process.env["SSL_CERT_PATH"] || "localhost-cert.pem",
+  },
   cors: {
     origin: process.env["CORS_ORIGIN"] || "*",
     allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"],

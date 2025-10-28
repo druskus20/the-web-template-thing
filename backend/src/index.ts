@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { createSecureServer } from "node:http2";
+import { readFileSync } from "node:fs";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
@@ -110,12 +112,26 @@ logger.info(
   {
     host: config.server.host === "0.0.0.0" ? "localhost" : config.server.host,
     port: config.server.port,
+    ssl: config.ssl.enabled,
   },
   "Backend API server starting",
 );
 
-serve({
-  fetch: app.fetch,
-  port: config.server.port,
-  hostname: config.server.host,
-});
+if (config.ssl.enabled) {
+  serve({
+    fetch: app.fetch,
+    port: config.server.port,
+    hostname: config.server.host,
+    createServer: createSecureServer,
+    serverOptions: {
+      key: readFileSync(config.ssl.keyPath),
+      cert: readFileSync(config.ssl.certPath),
+    },
+  });
+} else {
+  serve({
+    fetch: app.fetch,
+    port: config.server.port,
+    hostname: config.server.host,
+  });
+}

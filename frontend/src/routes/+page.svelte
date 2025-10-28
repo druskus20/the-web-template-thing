@@ -3,11 +3,11 @@
   import { safe, isDefinedError } from "@orpc/client";
   import { logger } from "$lib/logger";
   import { onMount, onDestroy } from "svelte";
-  import type { FarewellResponseModel } from "@dashboard/api";
+  import type { FarewellResponse } from "@dashboard/api";
 
   let name = "";
   let helloResult = "";
-  let byeResult: FarewellResponseModel | null = null;
+  let byeResult: FarewellResponse | null = null;
   let errorMessage = "";
   let isBackendConnected = false;
   let healthCheckInterval: ReturnType<typeof setInterval>;
